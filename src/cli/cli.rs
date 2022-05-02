@@ -330,6 +330,32 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(color_arg.clone()),
         )
         .subcommand(
+            SubCommand::with_name("blend")
+                .about("Blend two colors using the given blend mode")
+                .long_about(
+                    "Create new colors by blending two colors using the given blend mode.\n\n\
+                     Example:\n  \
+                       pastel blend --blend_mode=multiply red blue")
+                .arg(
+                    Arg::with_name("blend_mode")
+                        .long("blend_mode")
+                        .short("b")
+                        .value_name("name")
+                        .help("The blend mode to use")
+                        .possible_values(&["multiply", "screen", "overlay"])
+                        .case_insensitive(true)
+                        .default_value("multiply")
+                        .required(true)
+                )
+                .arg(
+                    Arg::with_name("base")
+                        .value_name("backdrop")
+                        .help("The backdrop color on which the other color will be blended.")
+                        .required(true),
+                )
+                .arg(color_arg.clone().value_name("source").multiple(false)),
+        )
+        .subcommand(
             SubCommand::with_name("colorblind")
                 .about("Simulate a color under a certain colorblindness profile")
                 .long_about(

@@ -1,5 +1,7 @@
+use crate::blend::get_blending_function;
 use crate::colorspace::get_mixing_function;
 use crate::commands::prelude::*;
+use crate::output::Blend;
 
 use pastel::ColorblindnessType;
 use pastel::Fraction;
@@ -75,6 +77,25 @@ color_command!(MixCommand, config, matches, color, {
     let mix = get_mixing_function(matches.value_of("colorspace").expect("required argument"));
 
     mix(&base, color, fraction)
+});
+
+color_command!(BlendCommand, config, matches, color, {
+    let mut print_spectrum = PrintSpectrum::Yes;
+
+    let base = ColorArgIterator::from_color_arg(
+        config,
+        matches.value_of("base").expect("required argument"),
+        &mut print_spectrum,
+    )?;
+
+    let blend = get_blending_function(matches.value_of("blend_mode").expect("required argument"));
+
+    // FIXME: maybe get rid of clones?
+    Blend {
+        backdrop: base.clone(),
+        source: color.clone(),
+        output: blend(&base, color),
+    }
 });
 
 color_command!(ColorblindCommand, config, matches, color, {

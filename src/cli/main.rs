@@ -2,6 +2,7 @@ use std::io::{self, Write};
 
 use atty::Stream;
 
+mod blend;
 mod cli;
 mod colorpicker;
 mod colorpicker_tools;

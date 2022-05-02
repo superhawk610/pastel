@@ -64,6 +64,7 @@ impl Command {
             "paint" => Command::Generic(Box::new(PaintCommand)),
             "format" => Command::WithColor(Box::new(FormatCommand)),
             "colorcheck" => Command::Generic(Box::new(ColorCheckCommand)),
+            "blend" => Command::WithColor(Box::new(color_commands::BlendCommand)),
             _ => unreachable!("Unknown subcommand"),
         }
     }

@@ -14,6 +14,46 @@ pub struct Output<'a> {
     colors_shown: usize,
 }
 
+pub trait ColorBlock {
+    fn primary_color(&self) -> &Color;
+    fn paint(&self, canvas: &mut Canvas, row: usize, col: usize, height: usize, width: usize);
+}
+
+pub struct Blend {
+    pub backdrop: Color,
+    pub source: Color,
+    pub output: Color,
+}
+
+impl ColorBlock for Color {
+    fn primary_color(&self) -> &Color {
+        self
+    }
+
+    fn paint(&self, canvas: &mut Canvas, row: usize, col: usize, height: usize, width: usize) {
+        canvas.draw_rect(row, col, height, width, self);
+    }
+}
+
+impl ColorBlock for Blend {
+    fn primary_color(&self) -> &Color {
+        &self.output
+    }
+
+    fn paint(&self, canvas: &mut Canvas, row: usize, col: usize, height: usize, width: usize) {
+        // draw backdrop
+        canvas.draw_rect(row, col, 1, width - 1, &self.backdrop);
+        canvas.draw_rect(row + 1, col, height - 2, 1, &self.backdrop);
+
+        // draw source
+        canvas.draw_rect(height + 1, col + 1, 1, width - 1, &self.source);
+        canvas.draw_rect(row + 1, col + width - 1, height - 2, 1, &self.source);
+
+        // draw overlap
+        canvas.draw_rect(row + 1, col + 1, height - 2, width - 2, &self.output);
+    }
+}
+
 impl Output<'_> {
     pub fn new(handle: &mut dyn Write) -> Output {
         Output {
@@ -22,7 +62,12 @@ impl Output<'_> {
         }
     }
 
-    pub fn show_color_tty(&mut self, config: &Config, color: &Color) -> Result<()> {
+    pub fn show_color_tty<C: ColorBlock>(
+        &mut self,
+        config: &Config,
+        color_block: &C,
+    ) -> Result<()> {
+        let color = color_block.primary_color();
         let checkerboard_size: usize = 16;
         let color_panel_size: usize = 12;
 
@@ -44,12 +89,12 @@ impl Output<'_> {
             &Color::graytone(0.94),
             &Color::graytone(0.71),
         );
-        canvas.draw_rect(
+        color_block.paint(
+            &mut canvas,
             color_panel_position_y,
             color_panel_position_x,
             color_panel_size,
             color_panel_size,
-            color,
         );
 
         let mut text_y_offset = 0;
@@ -102,15 +147,19 @@ impl Output<'_> {
         canvas.print(self.handle)
     }
 
-    pub fn show_color(&mut self, config: &Config, color: &Color) -> Result<()> {
+    pub fn show_color<C: ColorBlock>(&mut self, config: &Config, color_block: &C) -> Result<()> {
         if config.interactive_mode {
             if self.colors_shown < 1 {
                 writeln!(self.handle)?
             };
-            self.show_color_tty(config, color)?;
+            self.show_color_tty(config, color_block)?;
             writeln!(self.handle)?;
         } else {
-            writeln!(self.handle, "{}", color.to_hsl_string(Format::NoSpaces))?;
+            writeln!(
+                self.handle,
+                "{}",
+                color_block.primary_color().to_hsl_string(Format::NoSpaces)
+            )?;
         }
         self.colors_shown += 1;
 
