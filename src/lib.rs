@@ -1,4 +1,5 @@
 pub mod ansi;
+pub mod blend;
 pub mod colorspace;
 pub mod delta_e;
 pub mod distinct;
@@ -10,6 +11,7 @@ mod types;
 
 use std::{fmt, str::FromStr};
 
+use blend::BlendMode;
 use colorspace::ColorSpace;
 pub use helper::Fraction;
 use helper::{clamp, interpolate, interpolate_angle, mod_positive, MaxPrecision};
@@ -652,6 +654,17 @@ impl Color {
         let b = composite_channel(source.b, source.alpha, backdrop.b, backdrop.alpha, a);
 
         Color::from_rgba(r, g, b, a)
+    }
+
+    /// Blend two colors, using the first as the backdrop and the second as the source.
+    /// The result is modulated by the backdrop alpha. A fully opaque backdrop will use
+    /// the blending function exclusively, while a partially or fully transparent
+    /// backdrop causes the result to be a weighted average between the source color
+    /// and the blended color.
+    pub fn blend<B: BlendMode>(&self, source: &Color) -> Color {
+        let backdrop = self.to_rgba();
+        let source = source.to_rgba();
+        B::blend(&backdrop, &source)
     }
 }
 
